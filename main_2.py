@@ -11,13 +11,15 @@ import seaborn as sns
 from PIL import Image
 
 
-#comment
+
+#commenttt
 
 path = "/mnt/data1/home/tatsumi/project_tatsumi/images"
 data_dir = "/mnt/data1/home/tatsumi/project_tatsumi/BoostingMonocularDepth/inputs"
 output_dir = "/mnt/data1/home/tatsumi/project_tatsumi/BoostingMonocularDepth/outputs_leres"
 shoki_types = ["med1", "med2","random_fixed","uni_fill1", "uni_fill2"]
-INIT_RANK = [30, 50, 80, 120, 150]
+result_dir = "/mnt/data1/home/tatsumi/project_tatsumi/result"
+INIT_RANK = [30, 50, 80, 120, 150, 321]
 
 dr = '3'
 date = "20231031"
@@ -26,8 +28,14 @@ shoki_type = "random_fixed"
 threshold = 3000
 savepath = "/mnt/data1/home/tatsumi/project_tatsumi/" + date +"/"
 
-#zero = np.zeros(100)
+zero = np.zeros(100)
+lrqmc_p = np.zeros(100)
+lrqmc_s = np.zeros(100)
+dlrqmc_p = np.zeros(100)
+dlrqmc_s = np.zeros(100)
 
+
+"""
 #1031の保存
 #np.save("/mnt/data1/home/tatsumi/project_tatsumi/20231031/data/re_p.npy", zero)
 
@@ -38,7 +46,7 @@ re_p = np.load("/mnt/data1/home/tatsumi/project_tatsumi/20231118/re_p.npy")
 re_s = np.load("/mnt/data1/home/tatsumi/project_tatsumi/20231118/re_s.npy")
 last_p = np.load("/mnt/data1/home/tatsumi/project_tatsumi/20231118/last_p.npy")
 last_s = np.load("/mnt/data1/home/tatsumi/project_tatsumi/20231118/last_s.npy")
-
+"""
 
 
 
@@ -60,7 +68,7 @@ last_s = np.load("/mnt/data1/home/tatsumi/project_tatsumi/20231118/last_s.npy")
 
 sum = np.zeros(5)
 
-for imgnum in range(0,2):
+for imgnum in range(0,100):
     img = cv2.imread(path + '/original/' + str(imgnum) + ".jpg")
     qimg = lrqmc.img2qm(path + '/original/' + str(imgnum) + ".jpg")
     img_masked, mask = lrqmc.add_random_missing_pixels(qimg, 0.1 * int(dr), "uniform", 1)
@@ -69,7 +77,7 @@ for imgnum in range(0,2):
     #cv2.imwrite('/mnt/data1/home/tatsumi/project_tatsumi/' + date + '/masked/'+ str(imgnum) + "_masked.jpg", masked_bgr)
     i = 0
 
-    X, U, V = lrqmc.lrqmc_2(img_masked, mask, 321, 2, 1e-3, 100, 1e-3, True, threshold, 0.9, False, False, "random_fixed")
+    X, U, V = lrqmc.lrqmc_2(img_masked, mask, 80, 2, 1e-3, 100, 1e-3, True, threshold, 0.9, False, False, "random_fixed")
 
     recovered_bgr = lrqmc.qm2img(X)[:, :, ::-1] * 255
     #cv2.imwrite('/mnt/data1/home/tatsumi/project_tatsumi/' + date + '/recovered/' + str(imgnum) + "_re_"+str(init_rank)+".jpg", recovered_bgr)
@@ -77,9 +85,9 @@ for imgnum in range(0,2):
     s3 = SSIM(lrqmc.qm2img(qimg), lrqmc.qm2img(X), data_range = 1, channel_axis = 2)
     print(imgnum, "{:.3f}".format(p3), "{:.3f}".format(s3))
 
-    re_p[imgnum] = cv2.PSNR(lrqmc.qm2img(qimg), lrqmc.qm2img(X))/3
-    re_s[imgnum] = SSIM(lrqmc.qm2img(qimg), lrqmc.qm2img(X), data_range = 1, channel_axis = 2)
-    """
+    lrqmc_p[imgnum] = cv2.PSNR(lrqmc.qm2img(qimg), lrqmc.qm2img(X))/3
+    lrqmc_s[imgnum] = SSIM(lrqmc.qm2img(qimg), lrqmc.qm2img(X), data_range = 1, channel_axis = 2)
+    
     lrqmc.save_image(X, data_dir + "/depth.jpg")
 
     os.chdir('/mnt/data1/home/tatsumi/project_tatsumi/BoostingMonocularDepth')
@@ -129,18 +137,18 @@ for imgnum in range(0,2):
     print("LRQMC後", cv2.PSNR(lrqmc.qm2img(qimg), lrqmc.qm2img(X))/3, SSIM(lrqmc.qm2img(qimg), lrqmc.qm2img(X), data_range = 1, channel_axis = 2))
     print("最終", cv2.PSNR(lrqmc.qm2img(qimg), lrqmc.qm2img(X_d_re))/3, SSIM(lrqmc.qm2img(qimg), lrqmc.qm2img(X_d_re), data_range = 1, channel_axis = 2))
 
-    last_p[imgnum] = cv2.PSNR(lrqmc.qm2img(qimg), lrqmc.qm2img(X_d_re))/3
-    last_s[imgnum] = SSIM(lrqmc.qm2img(qimg), lrqmc.qm2img(X_d_re), data_range = 1, channel_axis = 2)
+    dlrqmc_p[imgnum] = cv2.PSNR(lrqmc.qm2img(qimg), lrqmc.qm2img(X_d_re))/3
+    dlrqmc_s[imgnum] = SSIM(lrqmc.qm2img(qimg), lrqmc.qm2img(X_d_re), data_range = 1, channel_axis = 2)
     
 
 
+result_all = np.stack([lrqmc_p, lrqmc_s, dlrqmc_p, dlrqmc_s])
+filename = lrqmc.generate_timestamp_filename('output', "npy")
 
-np.save("/mnt/data1/home/tatsumi/project_tatsumi/20231118/last_p.npy", last_p)
-np.save("/mnt/data1/home/tatsumi/project_tatsumi/20231118/last_s.npy", last_s)
-np.save("/mnt/data1/home/tatsumi/project_tatsumi/20231118/re_p.npy", re_p)
-np.save("/mnt/data1/home/tatsumi/project_tatsumi/20231118/re_s.npy", re_s)
-print(re_p, re_s, last_p, last_s)
+np.save(filename, result_all)
 
+print(result_all)
+"""
 
 
 #img_1 = cv2.imread('/mnt/data1/home/tatsumi/project_tatsumi/20230712/last/82_last.jpg',0)
