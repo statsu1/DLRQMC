@@ -23,6 +23,20 @@ print(np.mean(re_p), np.mean(re_s))
 print(np.mean(last_p), np.mean(last_s))
 """
 
+path = "/mnt/data1/home/tatsumi/project_tatsumi/result/20240227142320"
+aa = np.load(path + "/result.npy")
 
-aa = np.load("/mnt/data1/home/tatsumi/project_tatsumi/result/output_20240126145034.npy")
-print(aa)
+sa_p = aa[2]-aa[0]
+sa_s = aa[3]-aa[1]
+
+num_p = 0
+num_s = 0
+
+for i in range(0, 100):
+    if(sa_p[i] >= 0):
+        num_p += 1
+    if(sa_s[i] > 0):
+        num_s += 1
+
+print(num_p, num_s)
+#print(aa)

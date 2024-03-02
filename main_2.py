@@ -19,6 +19,13 @@ data_dir = "/mnt/data1/home/tatsumi/project_tatsumi/BoostingMonocularDepth/input
 output_dir = "/mnt/data1/home/tatsumi/project_tatsumi/BoostingMonocularDepth/outputs_leres"
 shoki_types = ["med1", "med2","random_fixed","uni_fill1", "uni_fill2"]
 result_dir = "/mnt/data1/home/tatsumi/project_tatsumi/result"
+
+new_dir = lrqmc.generate_timestamp_filename('')
+os.mkdir(new_dir)
+print(new_dir)
+os.mkdir(new_dir + "/images")
+
+
 INIT_RANK = [30, 50, 80, 120, 150, 321]
 
 dr = '3'
@@ -66,6 +73,7 @@ last_s = np.load("/mnt/data1/home/tatsumi/project_tatsumi/20231118/last_s.npy")
 
 #print(threshold)
 
+
 sum = np.zeros(5)
 
 for imgnum in range(0,100):
@@ -75,11 +83,13 @@ for imgnum in range(0,100):
     
     masked_bgr = lrqmc.qm2img(img_masked)[:, :, ::-1] * 255
     #cv2.imwrite('/mnt/data1/home/tatsumi/project_tatsumi/' + date + '/masked/'+ str(imgnum) + "_masked.jpg", masked_bgr)
+    cv2.imwrite(new_dir + "/images/" + str(imgnum) + "_masked.jpg", masked_bgr)
     i = 0
 
     X, U, V = lrqmc.lrqmc_2(img_masked, mask, 80, 2, 1e-3, 100, 1e-3, True, threshold, 0.9, False, False, "random_fixed")
 
     recovered_bgr = lrqmc.qm2img(X)[:, :, ::-1] * 255
+    cv2.imwrite(new_dir + "/images/" + str(imgnum) + "_recovered.jpg", recovered_bgr)
     #cv2.imwrite('/mnt/data1/home/tatsumi/project_tatsumi/' + date + '/recovered/' + str(imgnum) + "_re_"+str(init_rank)+".jpg", recovered_bgr)
     p3 = cv2.PSNR(lrqmc.qm2img(qimg), lrqmc.qm2img(X))/3
     s3 = SSIM(lrqmc.qm2img(qimg), lrqmc.qm2img(X), data_range = 1, channel_axis = 2)
@@ -96,6 +106,8 @@ for imgnum in range(0,100):
     img_uint8 = cv2.imread(output_dir + '/depth.png', cv2.CV_8U) # 白黒画像として読み込み
 
     depth = img_uint8.astype(np.float64) # floatに型変換
+    depth = 255-depth
+    cv2.imwrite(new_dir + "/images/" + str(imgnum) + "_depth.jpg", depth)
     #cv2.imwrite('/mnt/data1/home/tatsumi/project_tatsumi/' + date + '/depth/'+str(imgnum) + "_depth.jpg", depth)
     
     height = img.shape[0]
@@ -113,8 +125,8 @@ for imgnum in range(0,100):
         #print(X_d[0])
         #print(X_d.shape)
     else:
-        print("aaaaaaaaaaaaaaaaaa")
-        X_d = np.copy(qimg)
+        print("深度を欠損させない")
+        X_d = np.copy(img_masked)
         for y in range(0, height):
             for x in range(0, width):
                     X_d[y][x][0] = depth[y][x]/255
@@ -131,6 +143,7 @@ for imgnum in range(0,100):
     #cv2.imwrite('/mnt/data1/home/tatsumi/project_tatsumi/last_re.png', lrqmc.qm2real(X_d_re)*255)
 
     last_bgr = lrqmc.qm2img(X_d_re)[:, :, ::-1] * 255
+    cv2.imwrite(new_dir + "/images/" + str(imgnum) + "_last.jpg", last_bgr)
     #cv2.imwrite('/mnt/data1/home/tatsumi/project_tatsumi/' + date + '/last/' + str(imgnum) + "_last_"+str(init_rank)+".jpg", last_bgr)
 
 
@@ -139,15 +152,18 @@ for imgnum in range(0,100):
 
     dlrqmc_p[imgnum] = cv2.PSNR(lrqmc.qm2img(qimg), lrqmc.qm2img(X_d_re))/3
     dlrqmc_s[imgnum] = SSIM(lrqmc.qm2img(qimg), lrqmc.qm2img(X_d_re), data_range = 1, channel_axis = 2)
-    
 
-
+cv2.imwrite("/mnt/data1/home/tatsumi/project_tatsumi/nofull_depth.jpg", lrqmc.qm2img(X_d_re)[:, :, ::-1] * 255)
+#cv2.imwrite("/mnt/data1/home/tatsumi/project_tatsumi/full_depth_2.jpg",X_d_re*255)
 result_all = np.stack([lrqmc_p, lrqmc_s, dlrqmc_p, dlrqmc_s])
-filename = lrqmc.generate_timestamp_filename('output', "npy")
+np.save(new_dir + "/result.npy", result_all)
 
-np.save(filename, result_all)
+#np.save(filename, result_all)
 
 print(result_all)
+
+
+
 """
 
 
