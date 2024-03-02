@@ -6,7 +6,7 @@ import numpy as np
 
 dr='3'
 
-path = "/mnt/data1/home/tatsumi/project_tatsumi/result/20240227142320"
+path = "/mnt/data1/home/tatsumi/project_tatsumi/result/20240220180944"
 name = path + "/result"
 aa = np.load(name + ".npy")
 
@@ -39,6 +39,7 @@ fig.set_size_inches(30, 10)
 plt.subplots_adjust(left=0.15, right=0.95, bottom=0.21, top=0.9)
 plt.savefig(path+'/psnr.pdf')
 plt.savefig(path+'/psnr.png')
+#plt.savefig("/mnt/data1/home/tatsumi/project_tatsumi/aaa.png")
 
 sns.set()
 type = 'ssim'
